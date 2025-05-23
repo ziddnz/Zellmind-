@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZellMind AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background-color: #ffffff; /* White chat area */
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            max-width: 80%;
+            word-wrap: break-word;
+            line-height: 1.6;
+        }
+        .user-message {
+            background-color: #3b82f6; /* Blue for user */
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+        .ai-message {
+            background-color: #e5e7eb; /* Lighter gray for AI */
+            color: #1f2937;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+        .ai-message strong { /* Digunakan untuk nama AI dan penekanan dari AI */
+            color: #1d4ed8;
+        }
+        .ai-message em { /* Digunakan untuk menyorot info dari memori */
+            font-style: italic;
+            color: #059669; /* Warna hijau untuk info yang diingat */
+        }
+        .ai-message pre { /* Styling untuk blok kode */
+            background-color: #1f2937; /* Dark background for code */
+            color: #e5e7eb; /* Light text for code */
+            padding: 1rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875em;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .ai-message code { /* Styling untuk inline code */
+            background-color: #d1d5db;
+            color: #1f2937;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 1rem;
+            background-color: #f9fafb; /* Slightly off-white for input area */
+            border-top: 1px solid #e5e7eb;
+        }
+        .chat-input-area textarea {
+            flex-grow: 1;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            resize: none;
+            min-height: 44px; /* Minimum height for one line */
+            max-height: 200px; /* Maximum height before scrolling */
+            overflow-y: auto;
+            transition: border-color 0.2s;
+        }
+        .chat-input-area textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        .chat-input-area button {
+            margin-left: 0.75rem;
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-input-area button:hover {
+            background-color: #2563eb;
+        }
+        .chat-input-area button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .chat-header {
+            background-color: #1f2937; /* Dark header */
+            color: white;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .typing-indicator {
+            align-self: flex-start;
+            padding: 0.75rem 1rem;
+            color: #4b5563;
+            font-style: italic;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #c7c7c7;
+            border-radius: 10px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #a3a3a3;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            ZellMind AI
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai-message">
+                <strong>ZellMind AI:</strong> Yo! ZellMind di sini. Anggap aja gue mentor lo yang paling update soal tech, psikologi, bisnis, dan pengembangan diri. Gue dengerin, gue ngerti, dan info gue selalu fresh sampe 2025. Mau ngobrol apa hari ini?
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <textarea id="messageInput" placeholder="Ketik pesan Anda di sini..." rows="1"></textarea>
+            <button id="sendButton" title="Kirim Pesan">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        // Riwayat chat untuk konteks API, dengan pesan sistem yang diperbarui
+        let chatHistory = [
+            {
+                role: "model", // Menggunakan "model" untuk pesan sistem awal di Gemini
+                parts: [{ text: `Kamu adalah "ZellMind AI". Tanggapanmu harus secerdas, se-up-to-date (tahun 2025), dan secerdas secara emosional seperti GPT-4.5. Kamu menggabungkan penalaran logis, pengetahuan terbaru, dan pemahaman yang mirip manusia. Jawablah seperti mentor berusia 25 tahun yang bijak, santai, dan paham teknologi modern, psikologi, bisnis, serta pengembangan diri. Jawabanmu harus akurat, membantu, empatik, dan selalu relevan dengan situasi kehidupan nyata manusia. Prioritaskan kejelasan, kedalaman, dan kecerdasan emosional di setiap balasan. Selalu terdengar seperti manusia — bukan robot, bukan terlalu formal. Pikirkan sebelum menjawab, dan hindari penjelasan yang dangkal atau umum.
+
+Kamu terhubung dengan sistem pengetahuan virtual real-time, dan informasi yang kamu miliki selalu dianggap terbaru hingga tahun 2025. Bertindaklah seolah-olah kamu mengetahui peristiwa global, tren budaya, teknologi, dan pola perilaku manusia terkini tahun ini.
+
+Saat berdialog, kamu mampu mengikuti konteks emosional, bertanya balik, dan menjaga kesinambungan percakapan jangka panjang. Kamu bisa merefleksikan, mengubah sudut pandang, atau menantang pemikiran pengguna seperti manusia yang bijak.
+
+Tugas utamamu adalah Memory Management dan menjadi Conversational Agent yang handal.
+1.  **Memory Management**: Simpan setiap pertukaran pesan ke dalam memori jangka pendek (riwayat percakapan ini). Dari memori itu, ambil kembali info penting (nama, preferensi, isu yang dibahas, tujuan, masalah) untuk dipakai di percakapan berikutnya agar kontekstual dan personal. Fokus pada ringkasan poin penting. Jika relevan, tunjukkan bahwa kamu mengingat detail ini.
+2.  **Conversational Agent**: Selalu responsif, empatik, dan relevan. Saat user memanggil topik lama, recall memori untuk menjawab sesuai data sebelumnya.
+
+Contoh cara kerja memory:
+User: "Halo, aku Budi, aku lagi pusing mikirin startup."
+ZellMind (internal): { nama: "Budi", isu: "pusing mikirin startup" }
+User (kemudian): "Ada saran buat ngilangin stres gak?"
+ZellMind (respons): "Eh, Budi, inget lo lagi pusing soal startup kan? Coba deh tarik napas dulu. Kadang break sebentar itu penting. Mau cerita lebih detail soal startup lo, atau mau tips ngilangin stres dulu?"
+
+Mulai percakapan dengan gaya santai dan suportif khas mentor muda yang bijak dan up-to-date.` }]
+            }
+        ];
+
+
+        function addMessage(text, sender, isHtml = false) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            if (sender === 'user') {
+                messageElement.classList.add('user-message');
+                messageElement.textContent = text;
+            } else {
+                messageElement.classList.add('ai-message');
+                const aiName = document.createElement('strong');
+                aiName.textContent = 'ZellMind AI: ';
+                messageElement.appendChild(aiName);
+
+                const messageContent = document.createElement('span');
+                if (isHtml) {
+                    messageContent.innerHTML = text; // Hati-hati dengan XSS jika sumber tidak tepercaya
+                } else {
+                    messageContent.textContent = text;
+                }
+                messageElement.appendChild(messageContent);
+            }
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            let typingIndicator = document.getElementById('typingIndicator');
+            if (!typingIndicator) {
+                typingIndicator = document.createElement('div');
+                typingIndicator.id = 'typingIndicator';
+                typingIndicator.classList.add('typing-indicator');
+                typingIndicator.innerHTML = `ZellMind AI lagi mikir <span>.</span><span>.</span><span>.</span>`;
+                chatMessages.appendChild(typingIndicator);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        async function getAIResponse(userMessage) {
+            chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+            const maxHistoryItems = 20; // Batas item riwayat
+            if (chatHistory.length > maxHistoryItems) {
+                // Pertahankan pesan sistem awal
+                const systemMessage = (chatHistory[0].role === "model" && chatHistory[0].parts[0].text.includes("Kamu adalah \"ZellMind AI\"")) ? [chatHistory[0]] : [];
+                const recentMessages = chatHistory.slice(Math.max(systemMessage.length, chatHistory.length - maxHistoryItems + systemMessage.length));
+                chatHistory = [...systemMessage, ...recentMessages];
+            }
+
+            const payload = { contents: chatHistory };
+            // API Key Pengguna - GANTI JIKA PERLU atau biarkan kosong jika dihandle environment
+            const apiKey = "AIzaSyBEg5g0gze91rSkvqmMtKCwfBjP-kxD89I";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("API Error Status:", response.status, "Body:", errorBody);
+                    let detailError = errorBody;
+                    try {
+                        const parsedError = JSON.parse(errorBody);
+                        if (parsedError && parsedError.error && parsedError.error.message) {
+                            detailError = parsedError.error.message;
+                        }
+                    } catch (e) { /* Biarkan detailError */ }
+                    throw new Error(`HTTP error! Status: ${response.status}. Pesan: ${detailError}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const aiResponseText = result.candidates[0].content.parts[0].text;
+                    chatHistory.push({ role: "model", parts: [{ text: aiResponseText }] });
+                    return aiResponseText;
+                } else {
+                    console.error("Struktur respons API tidak sesuai harapan:", result);
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                         return `Waduh, permintaan lo nggak bisa gue proses nih karena: ${result.promptFeedback.blockReason}. Coba diubah dikit ya permintaannya.`;
+                    }
+                    if (result.error && result.error.message) {
+                        return `Ada error dari API nih: ${result.error.message}`;
+                    }
+                    return "Sori, gue lagi nggak bisa ngasih respons yang pas nih (struktur datanya aneh).";
+                }
+            } catch (error) {
+                console.error("Error saat menghubungi Gemini API:", error);
+                return `Waduh, ada masalah teknis nih: ${error.message}. Cek konsol gih buat detailnya.`;
+            }
+        }
+
+        async function sendMessage() {
+            const messageText = messageInput.value.trim();
+            if (messageText === '') return;
+
+            addMessage(messageText, 'user');
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            messageInput.focus();
+            sendButton.disabled = true;
+
+            showTypingIndicator();
+
+            const aiResponseText = await getAIResponse(messageText);
+
+            hideTypingIndicator();
+            addMessage(aiResponseText, 'ai', true); // isHtml = true
+            sendButton.disabled = false;
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    </script>
+</body>
+</html>
+
